@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SÓCRATES 3D — Dashboard Analítico PND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #070B14;
+    --bg-card: rgba(19, 30, 50, 0.75);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-accent: rgba(56, 189, 248, 0.3);
+    --accent-blue: #38BDF8;
+    --accent-indigo: #818CF8;
+    --gold: #F59E0B;
+    --gold-light: #FDE68A;
+    --emerald: #10B981;
+    --rose: #F43F5E;
+    --text-main: #F8FAFC;
+    --text-muted: #94A3B8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .resp-md { white-space: normal; }
+  .resp-md h2, .resp-md h3, .resp-md h4 { margin: 12px 0 6px; font-size: 1rem; }
+  .resp-md ul { margin: 6px 0 6px 18px; }
+  .resp-md blockquote { margin: 8px 0; padding: 6px 10px; border-left: 3px solid #64748b; color: #cbd5e1; }
+  .resp-md code { background: #1e293b; padding: 1px 4px; border-radius: 4px; }
+  svg.viz { max-width: 820px; display: block; }
+  .viz-bar { fill: #3987e5; }
+  .viz-rot { fill: #cbd5e1; font-size: 11px; }
+  .viz-val { fill: #94a3b8; font-size: 11px; }
+  .viz-eixo { stroke: #334155; stroke-width: 1; }
+  .viz-nota { color: #94a3b8; font-size: 12px; }
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-dark);
+    background-image: radial-gradient(at 10% 10%, rgba(56, 189, 248, 0.07) 0px, transparent 50%),
+                      radial-gradient(at 90% 90%, rgba(129, 140, 248, 0.07) 0px, transparent 50%);
+    color: var(--text-main);
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1240px; margin: 0 auto; }
+  
+  /* Header com Mascote 3D */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+  .mascot-wrapper {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+  }
+  .mascot-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--gold);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+  }
+  .mascot-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    border: 3px solid var(--gold);
+  }
+  .header-info h1 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-info h1 .badge-3d {
+    font-size: 11px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    color: #070B14;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-weight: 800;
+  }
+  .header-info p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* KPIs Cards */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .kpi:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-accent);
+  }
+  .kpi .l {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .kpi .v {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-main);
+    background: linear-gradient(135deg, #FFFFFF, var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  .card h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .resp {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #E2E8F0;
+  }
+
+  pre.sql {
+    background: #0B132B;
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 12px;
+    overflow: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #A5F3FC;
+    line-height: 1.5;
+  }
+
+  .search-box {
+    width: 100%;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    background: #0B132B;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+  }
+  .search-box:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+  }
+
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .tbl th {
+    background: rgba(30, 41, 59, 0.9);
+    color: var(--text-main);
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .tbl td {
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #CBD5E1;
+  }
+  .tbl tr:hover td {
+    background: rgba(56, 189, 248, 0.05);
+    color: #FFFFFF;
+  }
+
+  .btn {
+    background: linear-gradient(135deg, var(--accent-blue), #2563EB);
+    color: #FFFFFF;
+    font-weight: 700;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    margin-top: 10px;
+    transition: opacity 0.2s ease;
+  }
+  .btn:hover { opacity: 0.9; }
+
+  .footer-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 800px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; text-align: center; }
+    .header-info h1 { justify-content: center; }
+  }
+</style>
+<script>
+  function filterTable() {
+    const query = document.getElementById('search').value.toLowerCase();
+    const rows = document.querySelectorAll('#resultTable tbody tr');
+    rows.forEach(r => {
+      r.style.display = r.innerText.toLowerCase().includes(query) ? '' : 'none';
+    });
+  }
+  function copySQL() {
+    const sql = document.getElementById('sqlCode').innerText;
+    navigator.clipboard.writeText(sql).then(() => {
+      const btn = document.getElementById('btnCopySQL');
+      btn.innerText = '✔ SQL Copiado!';
+      setTimeout(() => btn.innerText = 'Copiar SQL', 2000);
+    });
+  }
+</script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="mascot-wrapper">
+        <div class="mascot-placeholder">🏛️</div>
+      </div>
+      <div class="header-info">
+        <h1>SÓCRATES 3D <span class="badge-3d">INTELIGÊNCIA ANALÍTICA</span></h1>
+        <p>Painel Executivo PND (INEP/CILAES) · Gerado em 19/09/2026 às 13:28:31</p>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">Layouts da Consulta</div><div class="v">N02</div></div>
+      <div class="kpi"><div class="l">Linhas no Resultado</div><div class="v">49</div></div>
+      <div class="kpi"><div class="l">Confiança Analítica</div><div class="v">alta</div></div>
+      <div class="kpi"><div class="l">Score estrutural</div><div class="v">100%</div></div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Pergunta Analítica</h2>
+      <div class="resp">Quantos ensalados existem por município em PB e PE?</div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>💡 Resposta SÓCRATES</h2>
+        <div class="resp resp-md"><h3>Resposta</h3>
+<h4>📊 Resultado da Consulta</h4>
+<table class="tbl"><tbody>
+<tr><td>MUNICIPIO</td><td>UF</td><td>CO_MUNICIPIO_PROVA</td><td>QTD</td></tr>
+<tr><td>RECIFE</td><td>PE</td><td>2611606</td><td>13,959</td></tr>
+<tr><td>JOAO PESSOA</td><td>PB</td><td>2507507</td><td>8,595</td></tr>
+<tr><td>CAMPINA GRANDE</td><td>PB</td><td>2504009</td><td>6,997</td></tr>
+<tr><td>CARUARU</td><td>PE</td><td>2604106</td><td>6,352</td></tr>
+<tr><td>PETROLINA</td><td>PE</td><td>2611101</td><td>4,774</td></tr>
+<tr><td>GARANHUNS</td><td>PE</td><td>2606002</td><td>4,692</td></tr>
+<tr><td>JABOATAO DOS GUARARAPES</td><td>PE</td><td>2607901</td><td>2,872</td></tr>
+<tr><td>VITORIA DE SANTO ANTAO</td><td>PE</td><td>2616407</td><td>2,751</td></tr>
+<tr><td>ARCOVERDE</td><td>PE</td><td>2601201</td><td>2,651</td></tr>
+<tr><td>PAULISTA</td><td>PE</td><td>2610707</td><td>2,530</td></tr>
+<tr><td>CARPINA</td><td>PE</td><td>2604007</td><td>2,423</td></tr>
+<tr><td>GUARABIRA</td><td>PB</td><td>2506301</td><td>2,363</td></tr>
+<tr><td>CAJAZEIRAS</td><td>PB</td><td>2503704</td><td>2,277</td></tr>
+<tr><td>CABO DE SANTO AGOSTINHO</td><td>PE</td><td>2602902</td><td>2,209</td></tr>
+<tr><td>OLINDA</td><td>PE</td><td>2609600</td><td>2,167</td></tr>
+<tr><td>AFOGADOS DA INGAZEIRA</td><td>PE</td><td>2600104</td><td>2,055</td></tr>
+<tr><td>PALMARES</td><td>PE</td><td>2610004</td><td>1,979</td></tr>
+<tr><td>PATOS</td><td>PB</td><td>2510808</td><td>1,764</td></tr>
+<tr><td>NAZARE DA MATA</td><td>PE</td><td>2609501</td><td>1,650</td></tr>
+<tr><td>SERRA TALHADA</td><td>PE</td><td>2613909</td><td>1,577</td></tr>
+<tr><td>BELO JARDIM</td><td>PE</td><td>2601706</td><td>1,517</td></tr>
+<tr><td>IGARASSU</td><td>PE</td><td>2606804</td><td>1,510</td></tr>
+<tr><td>SALGUEIRO</td><td>PE</td><td>2612208</td><td>1,456</td></tr>
+<tr><td>ARARIPINA</td><td>PE</td><td>2601102</td><td>1,320</td></tr>
+<tr><td>CAMARAGIBE</td><td>PE</td><td>2603454</td><td>1,252</td></tr>
+<tr><td>MONTEIRO</td><td>PB</td><td>2509701</td><td>1,085</td></tr>
+<tr><td>CUITE</td><td>PB</td><td>2505105</td><td>1,056</td></tr>
+<tr><td>SURUBIM</td><td>PE</td><td>2614501</td><td>1,011</td></tr>
+<tr><td>SOUSA</td><td>PB</td><td>2516201</td><td>1,003</td></tr>
+<tr><td>IPOJUCA</td><td>PE</td><td>2607208</td><td>971</td></tr>
+</tbody></table>
+<h4>🔬 Análise Estatística (Agente de Análise)</h4>
+<p><strong>FATO</strong></p>
+<ul>
+<li>49 grupos analisados em &#x27;CO_MUNICIPIO_PROVA&#x27;; total 126,001,607.</li>
+<li>Maiores: VITORIA DE SANTO ANTAO = 2,616,407; SURUBIM = 2,614,501; SERRA TALHADA = 2,613,909.</li>
+<li>Menores: CAMPINA GRANDE = 2,504,009; CAJAZEIRAS = 2,503,704; AREIA = 2,501,104.</li>
+<li>Mediana 2603454.0, média 2571461.37, desvio 48440.37.</li>
+</ul>
+<p><strong>INFERÊNCIA</strong></p>
+<ul>
+<li>Distribuição relativamente uniforme entre os grupos (Gini 0.01).</li>
+</ul>
+<h4>Evidências e Como Foi Calculado</h4>
+<p>Dimensão analisada: <strong>MUNICIPIO</strong>. Valores: RECIFE: 13959; JOAO PESSOA: 8595; CAMPINA GRANDE: 6997; CARUARU: 6352; PETROLINA: 4774; GARANHUNS: 4692; JABOATAO DOS GUARARAPES: 2872; VITORIA DE SANTO ANTAO: 2751; ARCOVERDE: 2651; PAULISTA: 2530; CARPINA: 2423; GUARABIRA: 2363; CAJAZEIRAS: 2277; CABO DE SANTO AGOSTINHO: 2209; OLINDA: 2167. Soma: <strong>100,628</strong>.</p>
+<h4>🛡️ Proveniência dos Dados (RBNPND Discovery &amp; DBI)</h4>
+<p><strong>Auditoria de Proveniência (RBNPND / DBI):</strong></p>
+<ul>
+<li><strong>Layout Identificado:</strong> <code>N02</code> (Ensalamento e Distribuição de Candidatos em Salas)</li>
+<li><strong>Fonte Oficial Consultada:</strong> <code>N02</code> (1,460,004 registros totais no banco)</li>
+<li><strong>Filtros aplicados (do SQL executado):</strong> <code>t.SG_UF_PROVA IN (&#x27;PB&#x27;, &#x27;PE&#x27;)</code></li>
+<li><strong>Resultado Auditado:</strong> <strong>49 linhas no resultado</strong></li>
+</ul>
+<h4>Dados Utilizados</h4>
+<p>Layouts: N02. Fonte: banco local PND (<code>?</code>), executado em tempo real às 13:28:27.</p>
+<h4>SQL Executado</h4>
+<pre class="sql">SELECT t.NO_MUNICIPIO_PROVA AS MUNICIPIO, t.SG_UF_PROVA AS UF, t.CO_MUNICIPIO_PROVA AS CO_MUNICIPIO_PROVA, COUNT(DISTINCT t.CO_INSCRICAO_INEP) AS QTD FROM N02 t WHERE t.SG_UF_PROVA IN (&#x27;PB&#x27;, &#x27;PE&#x27;) GROUP BY t.CO_MUNICIPIO_PROVA, t.NO_MUNICIPIO_PROVA, t.SG_UF_PROVA ORDER BY 4 DESC LIMIT 100</pre>
+<h4>Confiança</h4>
+<p><strong>ALTA</strong></p></div>
+      </div>
+      <div class="card">
+        <h2>⚡ Consulta SQL Executada em Tempo Real</h2>
+        <pre class="sql" id="sqlCode">SELECT t.NO_MUNICIPIO_PROVA AS MUNICIPIO, t.SG_UF_PROVA AS UF, t.CO_MUNICIPIO_PROVA AS CO_MUNICIPIO_PROVA, COUNT(DISTINCT t.CO_INSCRICAO_INEP) AS QTD FROM N02 t WHERE t.SG_UF_PROVA IN (&#x27;PB&#x27;, &#x27;PE&#x27;) GROUP BY t.CO_MUNICIPIO_PROVA, t.NO_MUNICIPIO_PROVA, t.SG_UF_PROVA ORDER BY 4 DESC LIMIT 100</pre>
+        <button class="btn" id="btnCopySQL" onclick="copySQL()">Copiar SQL</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔎 Filtros aplicados</h2>
+      <ul><li><code>t.SG_UF_PROVA IN (&#x27;PB&#x27;, &#x27;PE&#x27;)</code></li></ul>
+    </div>
+
+    <div class="card"><h2>📈 QTD por MUNICIPIO</h2><svg class="viz" role="img" aria-label="QTD por MUNICIPIO" viewBox="0 0 800 478" width="100%"><g><title>RECIFE: 13.959</title><text x="182" y="12" text-anchor="end" class="viz-rot">RECIFE</text><rect x="190" y="0" width="520.0" height="16" rx="4" class="viz-bar"/><rect x="190" y="0" width="4.0" height="16" class="viz-bar"/><text x="716.0" y="12" class="viz-val">13.959</text></g><g><title>JOAO PESSOA: 8.595</title><text x="182" y="30" text-anchor="end" class="viz-rot">JOAO PESSOA</text><rect x="190" y="18" width="320.2" height="16" rx="4" class="viz-bar"/><rect x="190" y="18" width="4.0" height="16" class="viz-bar"/><text x="516.2" y="30" class="viz-val">8.595</text></g><g><title>CAMPINA GRANDE: 6.997</title><text x="182" y="48" text-anchor="end" class="viz-rot">CAMPINA GRANDE</text><rect x="190" y="36" width="260.7" height="16" rx="4" class="viz-bar"/><rect x="190" y="36" width="4.0" height="16" class="viz-bar"/><text x="456.7" y="48" class="viz-val">6.997</text></g><g><title>CARUARU: 6.352</title><text x="182" y="66" text-anchor="end" class="viz-rot">CARUARU</text><rect x="190" y="54" width="236.6" height="16" rx="4" class="viz-bar"/><rect x="190" y="54" width="4.0" height="16" class="viz-bar"/><text x="432.6" y="66" class="viz-val">6.352</text></g><g><title>PETROLINA: 4.774</title><text x="182" y="84" text-anchor="end" class="viz-rot">PETROLINA</text><rect x="190" y="72" width="177.8" height="16" rx="4" class="viz-bar"/><rect x="190" y="72" width="4.0" height="16" class="viz-bar"/><text x="373.8" y="84" class="viz-val">4.774</text></g><g><title>GARANHUNS: 4.692</title><text x="182" y="102" text-anchor="end" class="viz-rot">GARANHUNS</text><rect x="190" y="90" width="174.8" height="16" rx="4" class="viz-bar"/><rect x="190" y="90" width="4.0" height="16" class="viz-bar"/><text x="370.8" y="102" class="viz-val">4.692</text></g><g><title>JABOATAO DOS GUARARAPES: 2.872</title><text x="182" y="120" text-anchor="end" class="viz-rot">JABOATAO DOS GUARARAPES</text><rect x="190" y="108" width="107.0" height="16" rx="4" class="viz-bar"/><rect x="190" y="108" width="4.0" height="16" class="viz-bar"/><text x="303.0" y="120" class="viz-val">2.872</text></g><g><title>VITORIA DE SANTO ANTAO: 2.751</title><text x="182" y="138" text-anchor="end" class="viz-rot">VITORIA DE SANTO ANTAO</text><rect x="190" y="126" width="102.5" height="16" rx="4" class="viz-bar"/><rect x="190" y="126" width="4.0" height="16" class="viz-bar"/><text x="298.5" y="138" class="viz-val">2.751</text></g><g><title>ARCOVERDE: 2.651</title><text x="182" y="156" text-anchor="end" class="viz-rot">ARCOVERDE</text><rect x="190" y="144" width="98.8" height="16" rx="4" class="viz-bar"/><rect x="190" y="144" width="4.0" height="16" class="viz-bar"/><text x="294.8" y="156" class="viz-val">2.651</text></g><g><title>PAULISTA: 2.530</title><text x="182" y="174" text-anchor="end" class="viz-rot">PAULISTA</text><rect x="190" y="162" width="94.2" height="16" rx="4" class="viz-bar"/><rect x="190" y="162" width="4.0" height="16" class="viz-bar"/><text x="290.2" y="174" class="viz-val">2.530</text></g><g><title>CARPINA: 2.423</title><text x="182" y="192" text-anchor="end" class="viz-rot">CARPINA</text><rect x="190" y="180" width="90.3" height="16" rx="4" class="viz-bar"/><rect x="190" y="180" width="4.0" height="16" class="viz-bar"/><text x="286.3" y="192" class="viz-val">2.423</text></g><g><title>GUARABIRA: 2.363</title><text x="182" y="210" text-anchor="end" class="viz-rot">GUARABIRA</text><rect x="190" y="198" width="88.0" height="16" rx="4" class="viz-bar"/><rect x="190" y="198" width="4.0" height="16" class="viz-bar"/><text x="284.0" y="210" class="viz-val">2.363</text></g><g><title>CAJAZEIRAS: 2.277</title><text x="182" y="228" text-anchor="end" class="viz-rot">CAJAZEIRAS</text><rect x="190" y="216" width="84.8" height="16" rx="4" class="viz-bar"/><rect x="190" y="216" width="4.0" height="16" class="viz-bar"/><text x="280.8" y="228" class="viz-val">2.277</text></g><g><title>CABO DE SANTO AGOSTINHO: 2.209</title><text x="182" y="246" text-anchor="end" class="viz-rot">CABO DE SANTO AGOSTINHO</text><rect x="190" y="234" width="82.3" height="16" rx="4" class="viz-bar"/><rect x="190" y="234" width="4.0" height="16" class="viz-bar"/><text x="278.3" y="246" class="viz-val">2.209</text></g><g><title>OLINDA: 2.167</title><text x="182" y="264" text-anchor="end" class="viz-rot">OLINDA</text><rect x="190" y="252" width="80.7" height="16" rx="4" class="viz-bar"/><rect x="190" y="252" width="4.0" height="16" class="viz-bar"/><text x="276.7" y="264" class="viz-val">2.167</text></g><g><title>AFOGADOS DA INGAZEIRA: 2.055</title><text x="182" y="282" text-anchor="end" class="viz-rot">AFOGADOS DA INGAZEIRA</text><rect x="190" y="270" width="76.6" height="16" rx="4" class="viz-bar"/><rect x="190" y="270" width="4.0" height="16" class="viz-bar"/><text x="272.6" y="282" class="viz-val">2.055</text></g><g><title>PALMARES: 1.979</title><text x="182" y="300" text-anchor="end" class="viz-rot">PALMARES</text><rect x="190" y="288" width="73.7" height="16" rx="4" class="viz-bar"/><rect x="190" y="288" width="4.0" height="16" class="viz-bar"/><text x="269.7" y="300" class="viz-val">1.979</text></g><g><title>PATOS: 1.764</title><text x="182" y="318" text-anchor="end" class="viz-rot">PATOS</text><rect x="190" y="306" width="65.7" height="16" rx="4" class="viz-bar"/><rect x="190" y="306" width="4.0" height="16" class="viz-bar"/><text x="261.7" y="318" class="viz-val">1.764</text></g><g><title>NAZARE DA MATA: 1.650</title><text x="182" y="336" text-anchor="end" class="viz-rot">NAZARE DA MATA</text><rect x="190" y="324" width="61.5" height="16" rx="4" class="viz-bar"/><rect x="190" y="324" width="4.0" height="16" class="viz-bar"/><text x="257.5" y="336" class="viz-val">1.650</text></g><g><title>SERRA TALHADA: 1.577</title><text x="182" y="354" text-anchor="end" class="viz-rot">SERRA TALHADA</text><rect x="190" y="342" width="58.7" height="16" rx="4" class="viz-bar"/><rect x="190" y="342" width="4.0" height="16" class="viz-bar"/><text x="254.7" y="354" class="viz-val">1.577</text></g><g><title>BELO JARDIM: 1.517</title><text x="182" y="372" text-anchor="end" class="viz-rot">BELO JARDIM</text><rect x="190" y="360" width="56.5" height="16" rx="4" class="viz-bar"/><rect x="190" y="360" width="4.0" height="16" class="viz-bar"/><text x="252.5" y="372" class="viz-val">1.517</text></g><g><title>IGARASSU: 1.510</title><text x="182" y="390" text-anchor="end" class="viz-rot">IGARASSU</text><rect x="190" y="378" width="56.3" height="16" rx="4" class="viz-bar"/><rect x="190" y="378" width="4.0" height="16" class="viz-bar"/><text x="252.3" y="390" class="viz-val">1.510</text></g><g><title>SALGUEIRO: 1.456</title><text x="182" y="408" text-anchor="end" class="viz-rot">SALGUEIRO</text><rect x="190" y="396" width="54.2" height="16" rx="4" class="viz-bar"/><rect x="190" y="396" width="4.0" height="16" class="viz-bar"/><text x="250.2" y="408" class="viz-val">1.456</text></g><g><title>ARARIPINA: 1.320</title><text x="182" y="426" text-anchor="end" class="viz-rot">ARARIPINA</text><rect x="190" y="414" width="49.2" height="16" rx="4" class="viz-bar"/><rect x="190" y="414" width="4.0" height="16" class="viz-bar"/><text x="245.2" y="426" class="viz-val">1.320</text></g><g><title>CAMARAGIBE: 1.252</title><text x="182" y="444" text-anchor="end" class="viz-rot">CAMARAGIBE</text><rect x="190" y="432" width="46.6" height="16" rx="4" class="viz-bar"/><rect x="190" y="432" width="4.0" height="16" class="viz-bar"/><text x="242.6" y="444" class="viz-val">1.252</text></g><line x1="190" y1="0" x2="190" y2="452" class="viz-eixo"/></svg><p class="viz-nota">Maiores 25 valores; a tabela completa está abaixo.</p></div>
+
+    <div class="card">
+      <h2>🏛️ Auditoria de Volumes por Layout PND</h2>
+      <table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Layout</th>
+      <th>Descrição</th>
+      <th>Registros</th>
+      <th>Chave</th>
+      <th>Valores únicos (chave)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>N02</td>
+      <td>ENSALAMENTO — candidato alocado a local/bloco/sala + flags de atendimento e distância.</td>
+      <td>1460004</td>
+      <td>CO_INSCRICAO_INEP</td>
+      <td>1451617</td>
+    </tr>
+    <tr>
+      <td>N50</td>
+      <td>SALAS — catálogo de salas (capacidade, dimensões, andar, reaplicação).</td>
+      <td>62917</td>
+      <td>CO_LOCAL</td>
+      <td>3949</td>
+    </tr>
+    <tr>
+      <td>N52</td>
+      <td>LOCAÇÃO DE ESPAÇO FÍSICO — endereço, infraestrutura, município, UF, capacidade.</td>
+      <td>515</td>
+      <td>CO_LOCAL</td>
+      <td>260</td>
+    </tr>
+    <tr>
+      <td>N60</td>
+      <td>QUESTIONÁRIO DE VISITA — vistoria predial in loco (acessibilidade, segurança, infra).</td>
+      <td>3565</td>
+      <td>CO_LOCAL</td>
+      <td>3565</td>
+    </tr>
+    <tr>
+      <td>N90</td>
+      <td>INSCRITOS — base censitária dos candidatos (1 linha por inscrição).</td>
+      <td>625952</td>
+      <td>CO_INSCRICAO_INEP</td>
+      <td>625952</td>
+    </tr>
+    <tr>
+      <td>N91</td>
+      <td>ATENDIMENTO/RECURSO — pedidos de atendimento especial e laudos (1:N por candidato).</td>
+      <td>1440</td>
+      <td>CO_INSCRICAO</td>
+      <td>369</td>
+    </tr>
+    <tr>
+      <td>BASE_PLANA</td>
+      <td>Base consolidada.</td>
+      <td>2787</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+    </div>
+
+    <div class="card">
+      <h2>📊 Microdados do Resultado</h2>
+      <input type="text" id="search" class="search-box" placeholder="🔍 Filtrar registros da tabela em tempo real..." onkeyup="filterTable()">
+      <div id="resultTable" style="overflow-x: auto;"><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>MUNICIPIO</th>
+      <th>UF</th>
+      <th>CO_MUNICIPIO_PROVA</th>
+      <th>QTD</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>RECIFE</td>
+      <td>PE</td>
+      <td>2611606</td>
+      <td>13959</td>
+    </tr>
+    <tr>
+      <td>JOAO PESSOA</td>
+      <td>PB</td>
+      <td>2507507</td>
+      <td>8595</td>
+    </tr>
+    <tr>
+      <td>CAMPINA GRANDE</td>
+      <td>PB</td>
+      <td>2504009</td>
+      <td>6997</td>
+    </tr>
+    <tr>
+      <td>CARUARU</td>
+      <td>PE</td>
+      <td>2604106</td>
+      <td>6352</td>
+    </tr>
+    <tr>
+      <td>PETROLINA</td>
+      <td>PE</td>
+      <td>2611101</td>
+      <td>4774</td>
+    </tr>
+    <tr>
+      <td>GARANHUNS</td>
+      <td>PE</td>
+      <td>2606002</td>
+      <td>4692</td>
+    </tr>
+    <tr>
+      <td>JABOATAO DOS GUARARAPES</td>
+      <td>PE</td>
+      <td>2607901</td>
+      <td>2872</td>
+    </tr>
+    <tr>
+      <td>VITORIA DE SANTO ANTAO</td>
+      <td>PE</td>
+      <td>2616407</td>
+      <td>2751</td>
+    </tr>
+    <tr>
+      <td>ARCOVERDE</td>
+      <td>PE</td>
+      <td>2601201</td>
+      <td>2651</td>
+    </tr>
+    <tr>
+      <td>PAULISTA</td>
+      <td>PE</td>
+      <td>2610707</td>
+      <td>2530</td>
+    </tr>
+    <tr>
+      <td>CARPINA</td>
+      <td>PE</td>
+      <td>2604007</td>
+      <td>2423</td>
+    </tr>
+    <tr>
+      <td>GUARABIRA</td>
+      <td>PB</td>
+      <td>2506301</td>
+      <td>2363</td>
+    </tr>
+    <tr>
+      <td>CAJAZEIRAS</td>
+      <td>PB</td>
+      <td>2503704</td>
+      <td>2277</td>
+    </tr>
+    <tr>
+      <td>CABO DE SANTO AGOSTINHO</td>
+      <td>PE</td>
+      <td>2602902</td>
+      <td>2209</td>
+    </tr>
+    <tr>
+      <td>OLINDA</td>
+      <td>PE</td>
+      <td>2609600</td>
+      <td>2167</td>
+    </tr>
+    <tr>
+      <td>AFOGADOS DA INGAZEIRA</td>
+      <td>PE</td>
+      <td>2600104</td>
+      <td>2055</td>
+    </tr>
+    <tr>
+      <td>PALMARES</td>
+      <td>PE</td>
+      <td>2610004</td>
+      <td>1979</td>
+    </tr>
+    <tr>
+      <td>PATOS</td>
+      <td>PB</td>
+      <td>2510808</td>
+      <td>1764</td>
+    </tr>
+    <tr>
+      <td>NAZARE DA MATA</td>
+      <td>PE</td>
+      <td>2609501</td>
+      <td>1650</td>
+    </tr>
+    <tr>
+      <td>SERRA TALHADA</td>
+      <td>PE</td>
+      <td>2613909</td>
+      <td>1577</td>
+    </tr>
+    <tr>
+      <td>BELO JARDIM</td>
+      <td>PE</td>
+      <td>2601706</td>
+      <td>1517</td>
+    </tr>
+    <tr>
+      <td>IGARASSU</td>
+      <td>PE</td>
+      <td>2606804</td>
+      <td>1510</td>
+    </tr>
+    <tr>
+      <td>SALGUEIRO</td>
+      <td>PE</td>
+      <td>2612208</td>
+      <td>1456</td>
+    </tr>
+    <tr>
+      <td>ARARIPINA</td>
+      <td>PE</td>
+      <td>2601102</td>
+      <td>1320</td>
+    </tr>
+    <tr>
+      <td>CAMARAGIBE</td>
+      <td>PE</td>
+      <td>2603454</td>
+      <td>1252</td>
+    </tr>
+    <tr>
+      <td>MONTEIRO</td>
+      <td>PB</td>
+      <td>2509701</td>
+      <td>1085</td>
+    </tr>
+    <tr>
+      <td>CUITE</td>
+      <td>PB</td>
+      <td>2505105</td>
+      <td>1056</td>
+    </tr>
+    <tr>
+      <td>SURUBIM</td>
+      <td>PE</td>
+      <td>2614501</td>
+      <td>1011</td>
+    </tr>
+    <tr>
+      <td>SOUSA</td>
+      <td>PB</td>
+      <td>2516201</td>
+      <td>1003</td>
+    </tr>
+    <tr>
+      <td>IPOJUCA</td>
+      <td>PE</td>
+      <td>2607208</td>
+      <td>971</td>
+    </tr>
+    <tr>
+      <td>SAPE</td>
+      <td>PB</td>
+      <td>2515302</td>
+      <td>961</td>
+    </tr>
+    <tr>
+      <td>OURICURI</td>
+      <td>PE</td>
+      <td>2609907</td>
+      <td>953</td>
+    </tr>
+    <tr>
+      <td>FLORESTA</td>
+      <td>PE</td>
+      <td>2605707</td>
+      <td>906</td>
+    </tr>
+    <tr>
+      <td>CATOLE DO ROCHA</td>
+      <td>PB</td>
+      <td>2504306</td>
+      <td>882</td>
+    </tr>
+    <tr>
+      <td>SAO LOURENCO DA MATA</td>
+      <td>PE</td>
+      <td>2613701</td>
+      <td>873</td>
+    </tr>
+    <tr>
+      <td>MAMANGUAPE</td>
+      <td>PB</td>
+      <td>2508901</td>
+      <td>862</td>
+    </tr>
+    <tr>
+      <td>PESQUEIRA</td>
+      <td>PE</td>
+      <td>2610905</td>
+      <td>851</td>
+    </tr>
+    <tr>
+      <td>ITAPORANGA</td>
+      <td>PB</td>
+      <td>2507002</td>
+      <td>830</td>
+    </tr>
+    <tr>
+      <td>SANTA CRUZ DO CAPIBARIBE</td>
+      <td>PE</td>
+      <td>2612505</td>
+      <td>775</td>
+    </tr>
+    <tr>
+      <td>ABREU E LIMA</td>
+      <td>PE</td>
+      <td>2600054</td>
+      <td>623</td>
+    </tr>
+    <tr>
+      <td>RIO TINTO</td>
+      <td>PB</td>
+      <td>2512903</td>
+      <td>590</td>
+    </tr>
+    <tr>
+      <td>SANTA RITA</td>
+      <td>PB</td>
+      <td>2513703</td>
+      <td>590</td>
+    </tr>
+    <tr>
+      <td>POMBAL</td>
+      <td>PB</td>
+      <td>2512101</td>
+      <td>572</td>
+    </tr>
+    <tr>
+      <td>PRINCESA ISABEL</td>
+      <td>PB</td>
+      <td>2512309</td>
+      <td>482</td>
+    </tr>
+    <tr>
+      <td>LIMOEIRO</td>
+      <td>PE</td>
+      <td>2608909</td>
+      <td>400</td>
+    </tr>
+    <tr>
+      <td>CUSTODIA</td>
+      <td>PE</td>
+      <td>2605103</td>
+      <td>195</td>
+    </tr>
+    <tr>
+      <td>AREIA</td>
+      <td>PB</td>
+      <td>2501104</td>
+      <td>193</td>
+    </tr>
+    <tr>
+      <td>JUAREZ TAVORA</td>
+      <td>PB</td>
+      <td>2507606</td>
+      <td>153</td>
+    </tr>
+    <tr>
+      <td>PANELAS</td>
+      <td>PE</td>
+      <td>2610202</td>
+      <td>119</td>
+    </tr>
+  </tbody>
+</table></div>
+    </div>
+
+    <div class="footer-sub">
+      Fonte de Dados: SQLite Local (socrates_pnd.db) com WAL Mode & Índices Cobridores · Single Source of Truth
+    </div>
+  </div>
+</body>
+</html>
