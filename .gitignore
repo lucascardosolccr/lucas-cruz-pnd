@@ -48,6 +48,7 @@ backups/
 .env
 .env.local
 *.local
+.claude/settings.local.json
 
 # Test outputs
 *.out
