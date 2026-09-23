@@ -2,6 +2,13 @@
   "name": "opensquad-project",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "dashboard:install": "npm --prefix dashboard install",
+    "dashboard:dev": "npm --prefix dashboard run dev",
+    "dashboard:build": "npm --prefix dashboard run build",
+    "dashboard:lint": "npm --prefix dashboard run lint",
+    "dashboard:test": "npm --prefix dashboard run test"
+  },
   "dependencies": {
     "playwright": "^1.58.2"
   }

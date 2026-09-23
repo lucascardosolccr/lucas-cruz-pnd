@@ -23,7 +23,9 @@ import time
 import urllib.request
 import urllib.error
 
-# Model configuration per mode
+# Model configuration per mode.
+# NOTE: verify these IDs against https://openrouter.ai/models before a run — a
+# renamed/retired model returns no image and the script reports "No image returned".
 MODELS = {
     "test": "sourceful/riverflow-v2-fast",
     "production": "google/gemini-3.1-flash-image-preview",
@@ -32,30 +34,47 @@ MODELS = {
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
+def _parse_env_value(line, var_name):
+    """Return the value assigned to var_name on a .env line, or None."""
+    line = line.strip()
+    if not line or line.startswith("#"):
+        return None
+    if line.startswith("export "):
+        line = line[len("export "):].lstrip()
+    if "=" not in line:
+        return None
+    name, value = line.split("=", 1)
+    if name.strip() != var_name:
+        return None
+    value = value.strip()
+    # Strip a single layer of matching surrounding quotes.
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        value = value[1:-1]
+    return value or None
+
+
 def load_api_key():
-    """Load OPENROUTER_API_KEY from environment."""
+    """Load OPENROUTER_API_KEY from the environment or a project .env file."""
     key = os.environ.get("OPENROUTER_API_KEY")
-    if not key:
-        # Try loading from .env in project root
-        env_candidates = [
-            os.path.join(os.getcwd(), ".env"),
-            os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"),
-        ]
-        for env_path in env_candidates:
-            env_path = os.path.abspath(env_path)
-            if os.path.exists(env_path):
-                with open(env_path, "r") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith("OPENROUTER_API_KEY=") and not line.startswith("#"):
-                            key = line.split("=", 1)[1].strip().strip('"').strip("'")
-                            break
-                if key:
-                    break
-    if not key:
-        print("ERROR: OPENROUTER_API_KEY not found in environment or .env file", file=sys.stderr)
-        sys.exit(1)
-    return key
+    if key:
+        return key
+
+    env_candidates = [
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"),
+    ]
+    for env_path in env_candidates:
+        env_path = os.path.abspath(env_path)
+        if not os.path.exists(env_path):
+            continue
+        with open(env_path, "r") as f:
+            for line in f:
+                value = _parse_env_value(line, "OPENROUTER_API_KEY")
+                if value:
+                    return value
+
+    print("ERROR: OPENROUTER_API_KEY not found in environment or .env file", file=sys.stderr)
+    sys.exit(1)
 
 
 def generate_image(prompt, output_path, mode, api_key, reference_image=None):

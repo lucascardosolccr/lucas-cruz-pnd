@@ -131,20 +131,12 @@ export class RoomBuilder {
     s.add.image(roomW - MARGIN / 4, roomH - TILE * 2, FURNITURE_KEYS.treasurechestGold)
       .setOrigin(0.5, 1).setScale(1.4).setDepth(1);
 
-
-
-      
     // Middle-left and middle-right (vertical center)
     const midY = WALL_H + (roomH - WALL_H) / 2;
     s.add.image(MARGIN / 2, midY, FURNITURE_KEYS.monsteraSmall)
       .setOrigin(0.5, 1).setScale(1.5).setDepth(midY);
     s.add.image(roomW - MARGIN / 2, midY, FURNITURE_KEYS.plant1)
       .setOrigin(0.5, 1).setScale(1.5).setDepth(midY);
-
-    // ================================================================
-    // DESK-AREA ACCENTS — flowers near wall, anchored to desk tops
-    // ================================================================
-
 
     // ================================================================
     // LOUNGE ZONE — cozy social area at bottom

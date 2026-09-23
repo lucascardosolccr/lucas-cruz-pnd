@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { OfficeScene } from './OfficeScene';
 import { useSquadStore } from '@/store/useSquadStore';
+import type { SquadState } from '@/types/state';
 
 export function PhaserGame() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,8 +21,10 @@ export function PhaserGame() {
       parent: container,
       width: w,
       height: h,
-      pixelArt: false,          // disabled globally so text renders smooth
-      antialias: false,          // keep pixel art look for sprites
+      // Text is rendered by Phaser.Text (unaffected by pixelArt), while sprite
+      // textures get a NEAREST filter in OfficeScene.create() for a crisp look.
+      pixelArt: false,
+      antialias: false,
       roundPixels: true,         // snap sprites to whole pixels
       backgroundColor: '#1a1420',
       scene: [OfficeScene],
@@ -50,8 +53,14 @@ export function PhaserGame() {
     };
   }, []);
 
-  // Bridge React state → Phaser scene
+  // Bridge React state → Phaser scene.
+  // Only forward an update when the *selected squad* or its state object actually
+  // changes — otherwise unrelated store mutations (e.g. the connection indicator
+  // toggling on every poll tick) would trigger a full scene rebuild.
   useEffect(() => {
+    let lastSquad: string | null = null;
+    let lastState: SquadState | null = null;
+
     return useSquadStore.subscribe((state) => {
       const game = gameRef.current;
       if (!game) return;
@@ -62,6 +71,12 @@ export function PhaserGame() {
       const squadState = selectedSquad
         ? state.activeStates.get(selectedSquad) ?? null
         : null;
+
+      // Store actions replace the state object on every real change, so a
+      // reference check is enough to detect meaningful updates.
+      if (selectedSquad === lastSquad && squadState === lastState) return;
+      lastSquad = selectedSquad;
+      lastState = squadState;
 
       scene.events.emit('stateUpdate', squadState);
     });

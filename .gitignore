@@ -4,18 +4,19 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+# NOTE: anchored to the repo root so they don't accidentally match nested
+# source folders (e.g. dashboard/src/lib/).
+/build/
+/develop-eggs/
+/downloads/
+/eggs/
+/.eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -58,3 +59,14 @@ htmlcov/
 temp/
 tmp/
 *.temp
+
+# Node / build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Opensquad — private, per-user state (never commit)
+_opensquad/_browser_profile/
+.playwright-mcp/
+_opensquad/_memory/company.md
+_opensquad/_memory/preferences.md

@@ -15,6 +15,9 @@ export function SquadCard({ squad, state, isSelected, onSelect }: SquadCardProps
   return (
     <button
       onClick={onSelect}
+      aria-pressed={isSelected}
+      aria-label={`${squad.name}${isActive ? ` — ${status}` : " — inactive"}`}
+      title={squad.description || squad.name}
       style={{
         display: "flex",
         alignItems: "center",

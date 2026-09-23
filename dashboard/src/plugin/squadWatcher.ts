@@ -8,6 +8,7 @@ import { watch as chokidarWatch } from "chokidar";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { SquadInfo, SquadState, WsMessage } from "../types/state";
+import { isValidState } from "./validateState";
 
 function resolveSquadsDir(): string {
   const candidates = [
@@ -63,16 +64,6 @@ async function discoverSquads(squadsDir: string): Promise<SquadInfo[]> {
   }
 
   return squads;
-}
-
-function isValidState(data: unknown): data is SquadState {
-  if (!data || typeof data !== "object") return false;
-  const d = data as Record<string, unknown>;
-  return (
-    typeof d.status === "string" &&
-    d.step != null && typeof d.step === "object" &&
-    Array.isArray(d.agents)
-  );
 }
 
 async function readActiveStates(squadsDir: string): Promise<Record<string, SquadState>> {

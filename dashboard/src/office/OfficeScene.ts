@@ -40,6 +40,9 @@ const DEMO_AGENTS: Agent[] = [
 export class OfficeScene extends Phaser.Scene {
   private agentSprites: Map<string, AgentSprite> = new Map();
   private roomBuilder!: RoomBuilder;
+  // Signature of the last rendered composition (agent ids + desk positions + room
+  // size). When it is unchanged we update sprites in place instead of rebuilding.
+  private currentSignature: string | null = null;
 
   constructor() {
     super({ key: 'OfficeScene' });
@@ -72,11 +75,13 @@ export class OfficeScene extends Phaser.Scene {
 
   create(): void {
     // Set all loaded textures to NEAREST filter for crisp pixel art
-    this.textures.list && Object.values(this.textures.list).forEach((tex) => {
-      if (tex.key !== '__DEFAULT' && tex.key !== '__MISSING') {
-        tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    if (this.textures.list) {
+      for (const tex of Object.values(this.textures.list)) {
+        if (tex.key !== '__DEFAULT' && tex.key !== '__MISSING') {
+          tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+        }
       }
-    });
+    }
 
     this.roomBuilder = new RoomBuilder(this);
 
@@ -92,33 +97,23 @@ export class OfficeScene extends Phaser.Scene {
     this.renderScene(agents);
   }
 
-  private renderScene(agents: Agent[]): void {
-    // Auto-assign desk positions if all agents are at the same spot (default 1,1)
-    const allSameDesk = agents.length > 1 &&
-      agents.every(a => a.desk.col === agents[0].desk.col && a.desk.row === agents[0].desk.row);
-    if (allSameDesk) {
-      const cols = Math.min(agents.length, 3); // max 3 columns
-      agents = agents.map((a, i) => ({
-        ...a,
-        desk: { col: (i % cols) + 1, row: Math.floor(i / cols) + 1 },
-      }));
+  private renderScene(inputAgents: Agent[]): void {
+    const { agents, roomW, roomH, cellW, cellH } = this.computeLayout(inputAgents);
+
+    const signature =
+      agents.map((a) => `${a.id}@${a.desk.col},${a.desk.row}`).join('|') +
+      `#${roomW}x${roomH}`;
+
+    // Same squad composition & layout → update statuses in place (no teardown).
+    if (signature === this.currentSignature && this.agentSprites.size === agents.length) {
+      for (const agent of agents) {
+        this.agentSprites.get(agent.id)?.updateStatus(agent);
+      }
+      return;
     }
 
-    let maxCol = 0, maxRow = 0;
-    for (const agent of agents) {
-      maxCol = Math.max(maxCol, agent.desk.col);
-      maxRow = Math.max(maxRow, agent.desk.row);
-    }
-
-    // Wider cells for comfortable spacing between agents + labels
-    const cellW = CELL_W + 64;   // 160px per cell (wider for desk tables + decorations)
-    const cellH = CELL_H + 80;   // 176px per cell (label + monitor + desk + avatar)
-
-    const roomW = Math.max(maxCol * cellW + MARGIN * 2, 580);
-    // Extra space below desk grid for lounge area
-    const loungeSpace = CELL_H + 48;
-    const roomH = maxRow * cellH + MARGIN * 2 + WALL_H + loungeSpace;
-
+    // Composition changed → rebuild the room and sprites from scratch.
+    this.currentSignature = signature;
     this.clearScene();
     this.roomBuilder.build(roomW, roomH);
 
@@ -143,7 +138,47 @@ export class OfficeScene extends Phaser.Scene {
     cam.centerOn(roomW / 2, roomH / 2);
   }
 
+  /** Resolve desk positions and derive room dimensions for a set of agents. */
+  private computeLayout(agents: Agent[]): {
+    agents: Agent[];
+    roomW: number;
+    roomH: number;
+    cellW: number;
+    cellH: number;
+  } {
+    // Auto-assign desk positions if all agents are at the same spot (default 1,1)
+    const allSameDesk =
+      agents.length > 1 &&
+      agents.every((a) => a.desk.col === agents[0].desk.col && a.desk.row === agents[0].desk.row);
+    if (allSameDesk) {
+      const cols = Math.min(agents.length, 3); // max 3 columns
+      agents = agents.map((a, i) => ({
+        ...a,
+        desk: { col: (i % cols) + 1, row: Math.floor(i / cols) + 1 },
+      }));
+    }
+
+    let maxCol = 0, maxRow = 0;
+    for (const agent of agents) {
+      maxCol = Math.max(maxCol, agent.desk.col);
+      maxRow = Math.max(maxRow, agent.desk.row);
+    }
+
+    // Wider cells for comfortable spacing between agents + labels
+    const cellW = CELL_W + 64;   // 160px per cell (wider for desk tables + decorations)
+    const cellH = CELL_H + 80;   // 176px per cell (label + monitor + desk + avatar)
+
+    const roomW = Math.max(maxCol * cellW + MARGIN * 2, 580);
+    // Extra space below desk grid for lounge area
+    const loungeSpace = CELL_H + 48;
+    const roomH = maxRow * cellH + MARGIN * 2 + WALL_H + loungeSpace;
+
+    return { agents, roomW, roomH, cellW, cellH };
+  }
+
   private clearScene(): void {
+    // Destroy AgentSprite wrappers first so their animation timers are cleared
+    // (removeAll only disposes display objects, not scene timers).
     for (const sprite of this.agentSprites.values()) {
       sprite.destroy();
     }

@@ -46,12 +46,14 @@ export async function uploadToImgBB(imagePath, apiKey) {
 const IG_BASE = 'https://graph.facebook.com/v21.0';
 
 export async function createChildContainer(userId, imageUrl, accessToken) {
-  const params = new URLSearchParams({
+  // Send credentials in the POST body (application/x-www-form-urlencoded) rather
+  // than the query string, so access tokens don't leak into request logs/proxies.
+  const body = new URLSearchParams({
     image_url: imageUrl,
     is_carousel_item: 'true',
     access_token: accessToken,
   });
-  const res = await fetch(`${IG_BASE}/${userId}/media?${params}`, { method: 'POST' });
+  const res = await fetch(`${IG_BASE}/${userId}/media`, { method: 'POST', body });
   if (!res.ok) throw new Error(`createChildContainer failed [${res.status}]: ${await res.text()}`);
   return (await res.json()).id;
 }
@@ -75,20 +77,20 @@ export async function pollUntilFinished(containerId, accessToken, timeoutMs = 60
 }
 
 export async function createCarouselContainer(userId, childIds, caption, accessToken) {
-  const params = new URLSearchParams({
+  const body = new URLSearchParams({
     media_type: 'CAROUSEL',
     children: childIds.join(','),
     caption,
     access_token: accessToken,
   });
-  const res = await fetch(`${IG_BASE}/${userId}/media?${params}`, { method: 'POST' });
+  const res = await fetch(`${IG_BASE}/${userId}/media`, { method: 'POST', body });
   if (!res.ok) throw new Error(`createCarouselContainer failed [${res.status}]: ${await res.text()}`);
   return (await res.json()).id;
 }
 
 export async function publishMedia(userId, containerId, accessToken) {
-  const params = new URLSearchParams({ creation_id: containerId, access_token: accessToken });
-  const res = await fetch(`${IG_BASE}/${userId}/media_publish?${params}`, { method: 'POST' });
+  const body = new URLSearchParams({ creation_id: containerId, access_token: accessToken });
+  const res = await fetch(`${IG_BASE}/${userId}/media_publish`, { method: 'POST', body });
   if (!res.ok) throw new Error(`publishMedia failed [${res.status}]: ${await res.text()}`);
   return (await res.json()).id;
 }

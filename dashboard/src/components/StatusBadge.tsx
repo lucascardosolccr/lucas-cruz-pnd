@@ -18,6 +18,9 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <span
+      role="img"
+      aria-label={`status: ${status}`}
+      title={status}
       style={{
         display: "inline-block",
         width: 8,
